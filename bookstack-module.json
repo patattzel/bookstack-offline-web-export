@@ -1,0 +1,5 @@
+{
+  "name": "Offline Web Export",
+  "description": "Adds an offline web ZIP export with navigable HTML files and bundled assets.",
+  "version": "1.0.0"
+}

@@ -1,0 +1,31 @@
+name: Release Module Zip
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build-zip:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build module zip
+        run: bash scripts/package-module.sh
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bookstack-offline-web-export
+          path: dist/bookstack-offline-web-export.zip
+
+      - name: Upload release asset
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/bookstack-offline-web-export.zip
