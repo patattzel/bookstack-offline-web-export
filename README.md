@@ -1,54 +1,54 @@
 # BookStack Offline Web Export
 
-Separates BookStack-Theme-Modul für einen zusätzlichen Offline-Webexport als ZIP mit HTML-Dateien, Bildern und Anhängen.
+Standalone BookStack theme module that adds an additional offline web export as a ZIP containing HTML files, images, and attachments.
 
-## Inhalt
+## Features
 
-- Zusätzliche Browser-Routen für `offline-zip`
-- Offline-ZIP mit `index.html`
-- Navigierbare HTML-Dateien für Bücher, Kapitel und Seiten
-- Gebündelte Bilder und Anhänge unter `files/`
-- View-Override für einen zusätzlichen Menüeintrag `Offline Web ZIP`
+- Additional browser routes for `offline-zip`
+- Offline ZIP with `index.html`
+- Navigable HTML files for books, chapters, and pages
+- Bundled images and attachments under `files/`
+- View override to add an `Offline Web ZIP` export menu entry
 
 ## Installation
 
-1. Stelle sicher, dass in BookStack ein Theme aktiv ist:
+1. Ensure BookStack is already running with an active theme:
 
    ```env
    APP_THEME=custom
    ```
 
-2. Installiere das Modul als ZIP:
+2. Install the module ZIP:
 
    ```bash
    php artisan bookstack:install-module path/to/bookstack-offline-web-export.zip
    ```
 
-   Alternativ kann der Modulordner manuell nach `themes/<APP_THEME>/modules/offline-web-export` kopiert werden.
+   Alternatively, copy the module folder manually to `themes/<APP_THEME>/modules/offline-web-export`.
 
-## Direktinstallation via `bookstack:install-module`
-
-Bevorzugte Installationsmethode:
-
-```bash
-php artisan bookstack:install-module https://github.com/patattzel/bookstack-offline-web-export/releases/latest/download/bookstack-offline-web-export.zip
-```
-
-Voraussetzungen:
-
-- ein bereits aktives BookStack-Theme
-- ein veröffentlichtes GitHub-Release mit `bookstack-offline-web-export.zip`
-
-BookStack erwartet ein echtes Modul-ZIP, bei dem `bookstack-module.json` direkt im ZIP-Root liegt.
-Das normale GitHub-Repository-Source-ZIP ist **nicht** für `bookstack:install-module` geeignet.
-
-3. Leere bei Bedarf den View-Cache:
+3. Clear the view cache if needed:
 
    ```bash
    php artisan view:clear
    ```
 
-## Exportpfade
+## Direct Install via `bookstack:install-module`
+
+Preferred install method:
+
+```bash
+php artisan bookstack:install-module https://github.com/patattzel/bookstack-offline-web-export/releases/latest/download/bookstack-offline-web-export.zip
+```
+
+Requirements:
+
+- an active BookStack theme already configured
+- a published GitHub release containing `bookstack-offline-web-export.zip`
+
+BookStack expects a real module ZIP with `bookstack-module.json` at the ZIP root.
+The normal GitHub repository source ZIP is **not** suitable for `bookstack:install-module`.
+
+## Export Routes
 
 - `/books/{bookSlug}/export/offline-zip`
 - `/books/{bookSlug}/chapter/{chapterSlug}/export/offline-zip`
@@ -56,12 +56,12 @@ Das normale GitHub-Repository-Source-ZIP ist **nicht** für `bookstack:install-m
 
 ## Repository Release ZIP
 
-Dieses Repo enthält zusätzlich einen GitHub-Workflow unter `.github/workflows/release-module-zip.yml`.
-Bei einem Release oder manuellen Workflow-Start erzeugt er automatisch `dist/bookstack-offline-web-export.zip`
-über `scripts/package-module.sh` und lädt das ZIP als Artifact beziehungsweise Release-Asset hoch.
+This repository also contains a GitHub workflow at `.github/workflows/release-module-zip.yml`.
+On release publication or manual workflow dispatch it builds `dist/bookstack-offline-web-export.zip`
+via `scripts/package-module.sh` and uploads it as both a workflow artifact and a release asset.
 
-## Hinweise
+## Notes
 
-- Das bestehende `Portable ZIP` von BookStack bleibt unverändert.
-- Dieses Modul ergänzt nur einen zusätzlichen Offline-Webexport.
-- Die Modulklassen werden bewusst ohne Composer-Autoload geladen, damit das Paket direkt als BookStack-Modul funktioniert.
+- BookStack's existing `Portable ZIP` export remains unchanged.
+- This module only adds an additional offline web export.
+- The module classes intentionally avoid Composer autoloading so the package can be installed directly as a BookStack module.
