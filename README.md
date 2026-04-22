@@ -26,6 +26,22 @@ Separates BookStack-Theme-Modul für einen zusätzlichen Offline-Webexport als Z
 
    Alternativ kann der Modulordner manuell nach `themes/<APP_THEME>/modules/offline-web-export` kopiert werden.
 
+## Direktinstallation via `bookstack:install-module`
+
+Bevorzugte Installationsmethode:
+
+```bash
+php artisan bookstack:install-module https://github.com/patattzel/bookstack-offline-web-export/releases/latest/download/bookstack-offline-web-export.zip
+```
+
+Voraussetzungen:
+
+- ein bereits aktives BookStack-Theme
+- ein veröffentlichtes GitHub-Release mit `bookstack-offline-web-export.zip`
+
+BookStack erwartet ein echtes Modul-ZIP, bei dem `bookstack-module.json` direkt im ZIP-Root liegt.
+Das normale GitHub-Repository-Source-ZIP ist **nicht** für `bookstack:install-module` geeignet.
+
 3. Leere bei Bedarf den View-Cache:
 
    ```bash
