@@ -168,8 +168,7 @@ class OfflineExportBuilder
 
         $images = [];
         foreach (Image::query()->where('uploaded_to', '=', $page->id)->whereIn('type', ['gallery', 'drawio'])->get() as $image) {
-            $images[$this->normalizeLocalPath($image->url)] = $image;
-            $images[$this->normalizeLocalPath($image->path)] = $image;
+            $this->addImageLookupPaths($images, $image);
         }
 
         $pageContent = $this->htmlRewriter->rewrite($page->html, $linkMap, $currentPath, $assetStore, $attachments, $images);
@@ -381,6 +380,34 @@ class OfflineExportBuilder
         return rtrim($path, '/') ?: '/';
     }
 
+    /**
+     * @param array<string, Image> $images
+     */
+    protected function addImageLookupPaths(array &$images, Image $image): void
+    {
+        $paths = [
+            $image->url,
+            $image->path,
+            $image->getThumb(1680, null, true) ?: '',
+            $image->getThumb(150, 150, false) ?: '',
+        ];
+
+        foreach ($paths as $path) {
+            if ($path === '') {
+                continue;
+            }
+
+            $normalized = $this->normalizeLocalPath($path);
+            $images[$normalized] = $image;
+            $images[$this->normalizeImageComparablePath($normalized)] = $image;
+        }
+    }
+
+    protected function normalizeImageComparablePath(string $path): string
+    {
+        return preg_replace('#/((?:scaled|thumbs)-[^/]+)/#', '/', $path) ?: $path;
+    }
+
     protected function relativePath(string $fromPath, string $toPath): string
     {
         $fromParts = explode('/', trim(dirname($fromPath), '/'));
@@ -472,6 +499,15 @@ body.offline-export-body {
 .offline-missing-link {
     color: var(--offline-muted);
     text-decoration: line-through;
+}
+
+.offline-missing-image {
+    color: var(--offline-muted);
+    display: inline-block;
+    border: 1px dashed var(--offline-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--offline-note-bg);
 }
 
 .offline-missing-link-note {

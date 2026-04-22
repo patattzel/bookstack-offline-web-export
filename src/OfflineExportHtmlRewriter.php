@@ -32,7 +32,7 @@ class OfflineExportHtmlRewriter
 
         foreach ($document->queryXPath('//a[@href]') as $anchorNode) {
             if ($anchorNode instanceof DOMElement) {
-                $this->rewriteAnchorHref($anchorNode, $linkMap, $currentPath, $assetStore, $attachmentsByPath);
+                $this->rewriteAnchorHref($anchorNode, $linkMap, $currentPath, $assetStore, $attachmentsByPath, $imagesByPath);
             }
         }
 
@@ -54,8 +54,11 @@ class OfflineExportHtmlRewriter
         }
 
         $normalizedPath = $this->normalizeLocalPath($src);
-        $image = $imagesByPath[$normalizedPath] ?? null;
+        $image = $imagesByPath[$normalizedPath] ?? $imagesByPath[$this->normalizeImageComparablePath($normalizedPath)] ?? null;
         if (!$image) {
+            if ($this->isExternalResource($src)) {
+                $this->replaceImageWithMissingMarker($imageNode);
+            }
             return;
         }
 
@@ -66,6 +69,7 @@ class OfflineExportHtmlRewriter
     /**
      * @param array<string, string> $linkMap
      * @param array<string, Attachment> $attachmentsByPath
+     * @param array<string, Image> $imagesByPath
      */
     protected function rewriteAnchorHref(
         DOMElement $anchorNode,
@@ -73,6 +77,7 @@ class OfflineExportHtmlRewriter
         string $currentPath,
         OfflineExportAssetStore $assetStore,
         array $attachmentsByPath,
+        array $imagesByPath,
     ): void {
         $href = trim($anchorNode->getAttribute('href'));
         if ($href === '' || str_starts_with($href, '#') || str_starts_with($href, 'mailto:') || str_starts_with($href, 'tel:')) {
@@ -90,6 +95,13 @@ class OfflineExportHtmlRewriter
             }
 
             $anchorNode->setAttribute('href', $assetPath);
+            return;
+        }
+
+        $image = $imagesByPath[$normalizedPath] ?? $imagesByPath[$this->normalizeImageComparablePath($normalizedPath)] ?? null;
+        if ($image) {
+            $assetPath = $assetStore->addImage($image);
+            $anchorNode->setAttribute('href', $this->relativePath($currentPath, $assetPath));
             return;
         }
 
@@ -134,6 +146,18 @@ class OfflineExportHtmlRewriter
         return str_repeat('../', count($fromParts)) . implode('/', $toParts);
     }
 
+    protected function normalizeImageComparablePath(string $path): string
+    {
+        return preg_replace('#/((?:scaled|thumbs)-[^/]+)/#', '/', $path) ?: $path;
+    }
+
+    protected function isExternalResource(string $src): bool
+    {
+        return str_starts_with($src, 'http://')
+            || str_starts_with($src, 'https://')
+            || str_starts_with($src, '//');
+    }
+
     protected function replaceAnchorWithMissingMarker(DOMElement $anchorNode): void
     {
         $document = $anchorNode->ownerDocument;
@@ -153,5 +177,24 @@ class OfflineExportHtmlRewriter
         $anchorNode->parentNode?->insertBefore($textNode, $anchorNode);
         $anchorNode->parentNode?->insertBefore($noteNode, $anchorNode);
         $anchorNode->parentNode?->removeChild($anchorNode);
+    }
+
+    protected function replaceImageWithMissingMarker(DOMElement $imageNode): void
+    {
+        $document = $imageNode->ownerDocument;
+        if (!$document) {
+            return;
+        }
+
+        $altText = trim($imageNode->getAttribute('alt')) ?: 'Image';
+        $textNode = $document->createElement('span', $altText);
+        $textNode->setAttribute('class', 'offline-missing-image');
+
+        $noteNode = $document->createElement('span', ' (not included in export)');
+        $noteNode->setAttribute('class', 'offline-missing-link-note');
+
+        $imageNode->parentNode?->insertBefore($textNode, $imageNode);
+        $imageNode->parentNode?->insertBefore($noteNode, $imageNode);
+        $imageNode->parentNode?->removeChild($imageNode);
     }
 }
