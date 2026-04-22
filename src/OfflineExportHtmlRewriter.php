@@ -75,7 +75,7 @@ class OfflineExportHtmlRewriter
         array $attachmentsByPath,
     ): void {
         $href = trim($anchorNode->getAttribute('href'));
-        if ($href === '' || str_starts_with($href, 'mailto:') || str_starts_with($href, 'tel:')) {
+        if ($href === '' || str_starts_with($href, '#') || str_starts_with($href, 'mailto:') || str_starts_with($href, 'tel:')) {
             return;
         }
 
@@ -94,16 +94,17 @@ class OfflineExportHtmlRewriter
         }
 
         $targetPath = $linkMap[$normalizedPath] ?? null;
-        if (!$targetPath) {
+        if ($targetPath) {
+            $relativePath = $this->relativePath($currentPath, $targetPath);
+            if (!empty($fragment)) {
+                $relativePath .= '#' . $fragment;
+            }
+
+            $anchorNode->setAttribute('href', $relativePath);
             return;
         }
 
-        $relativePath = $this->relativePath($currentPath, $targetPath);
-        if (!empty($fragment)) {
-            $relativePath .= '#' . $fragment;
-        }
-
-        $anchorNode->setAttribute('href', $relativePath);
+        $this->replaceAnchorWithMissingMarker($anchorNode);
     }
 
     protected function normalizeLocalPath(string $url): string
@@ -131,5 +132,26 @@ class OfflineExportHtmlRewriter
         }
 
         return str_repeat('../', count($fromParts)) . implode('/', $toParts);
+    }
+
+    protected function replaceAnchorWithMissingMarker(DOMElement $anchorNode): void
+    {
+        $document = $anchorNode->ownerDocument;
+        if (!$document) {
+            return;
+        }
+
+        $textNode = $document->createElement('span');
+        $textNode->setAttribute('class', 'offline-missing-link');
+        while ($anchorNode->firstChild) {
+            $textNode->appendChild($anchorNode->firstChild);
+        }
+
+        $noteNode = $document->createElement('span', ' (not included in export)');
+        $noteNode->setAttribute('class', 'offline-missing-link-note');
+
+        $anchorNode->parentNode?->insertBefore($textNode, $anchorNode);
+        $anchorNode->parentNode?->insertBefore($noteNode, $anchorNode);
+        $anchorNode->parentNode?->removeChild($anchorNode);
     }
 }

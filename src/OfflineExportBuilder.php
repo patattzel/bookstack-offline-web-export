@@ -141,6 +141,7 @@ class OfflineExportBuilder
 
         foreach ($pages as $page) {
             $map[$this->normalizeLocalPath($page->getUrl())] = 'pages/' . $page->slug . '.html';
+            $map[$this->normalizeLocalPath($page->getPermalink())] = 'pages/' . $page->slug . '.html';
         }
 
         return $map;
@@ -324,8 +325,10 @@ class OfflineExportBuilder
             . '<title>' . e($title) . '</title>'
             . '<link rel="stylesheet" href="' . e($this->relativePath($currentPath, 'assets/offline-export.css')) . '">'
             . '</head>'
-            . '<body class="offline-export-body">'
+            . '<body class="export export-format-html export-engine-none offline-export-body">'
+            . '<div class="page-content" dir="auto">'
             . $body
+            . '</div>'
             . '</body>'
             . '</html>';
     }
@@ -341,11 +344,11 @@ class OfflineExportBuilder
             . '<title>' . e($title) . '</title>'
             . '<link rel="stylesheet" href="assets/offline-export.css">'
             . '</head>'
-            . '<body class="offline-export-body offline-export-index">'
-            . '<main class="offline-content"><section class="offline-section">'
+            . '<body class="export export-format-html export-engine-none offline-export-body offline-export-index">'
+            . '<div class="page-content" dir="auto"><main class="offline-content"><section class="offline-section">'
             . '<h1>' . e($title) . '</h1>'
             . '<p><a href="' . e($targetPath) . '">Weiter zum Export</a></p>'
-            . '</section></main>'
+            . '</section></main></div>'
             . '</body>'
             . '</html>';
     }
@@ -397,15 +400,20 @@ class OfflineExportBuilder
 
     protected function css(): string
     {
-        return <<<'CSS'
+        $exportCssPath = public_path('/dist/export-styles.css');
+        $baseCss = file_exists($exportCssPath) ? file_get_contents($exportCssPath) : '';
+
+        return $baseCss . "\n" . <<<'CSS'
 :root {
     color-scheme: light;
-    --offline-bg: #f4efe7;
-    --offline-paper: #fffdf9;
-    --offline-ink: #1d1a16;
-    --offline-accent: #9f3a22;
-    --offline-border: #d9c8b5;
-    --offline-muted: #6b6156;
+    --offline-bg: #f8f9fb;
+    --offline-paper: #ffffff;
+    --offline-ink: #222831;
+    --offline-accent: #206ea7;
+    --offline-border: #d9e2ec;
+    --offline-muted: #6b7280;
+    --offline-note-bg: #f3f4f6;
+    --offline-note-ink: #4b5563;
 }
 
 * {
@@ -414,11 +422,8 @@ class OfflineExportBuilder
 
 body.offline-export-body {
     margin: 0;
-    background:
-        radial-gradient(circle at top left, rgba(159, 58, 34, 0.08), transparent 28rem),
-        linear-gradient(180deg, #f8f3eb 0%, var(--offline-bg) 100%);
+    background: var(--offline-bg);
     color: var(--offline-ink);
-    font-family: Georgia, "Times New Roman", serif;
 }
 
 .offline-nav,
@@ -447,8 +452,8 @@ body.offline-export-body {
 .offline-section {
     background: var(--offline-paper);
     border: 1px solid var(--offline-border);
-    border-radius: 1rem;
-    box-shadow: 0 1rem 2.4rem rgba(29, 26, 22, 0.08);
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
     padding: 1.5rem;
     margin-bottom: 1rem;
 }
@@ -462,6 +467,22 @@ body.offline-export-body {
 
 .offline-section ul {
     padding-left: 1.25rem;
+}
+
+.offline-missing-link {
+    color: var(--offline-muted);
+    text-decoration: line-through;
+}
+
+.offline-missing-link-note {
+    color: var(--offline-note-ink);
+    background: var(--offline-note-bg);
+    border-radius: 999px;
+    display: inline-block;
+    font-size: 0.875em;
+    padding: 0.1rem 0.45rem;
+    margin-left: 0.25rem;
+    white-space: nowrap;
 }
 
 .offline-export-index .offline-content {
