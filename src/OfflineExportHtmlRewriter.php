@@ -56,9 +56,6 @@ class OfflineExportHtmlRewriter
         $normalizedPath = $this->normalizeLocalPath($src);
         $image = $imagesByPath[$normalizedPath] ?? $imagesByPath[$this->normalizeImageComparablePath($normalizedPath)] ?? null;
         if (!$image) {
-            if ($this->isExternalResource($src)) {
-                $this->replaceImageWithMissingMarker($imageNode);
-            }
             return;
         }
 
@@ -116,6 +113,10 @@ class OfflineExportHtmlRewriter
             return;
         }
 
+        if ($this->isExternalLink($href)) {
+            return;
+        }
+
         $this->replaceAnchorWithMissingMarker($anchorNode);
     }
 
@@ -158,6 +159,22 @@ class OfflineExportHtmlRewriter
             || str_starts_with($src, '//');
     }
 
+    protected function isExternalLink(string $href): bool
+    {
+        if (!$this->isExternalResource($href)) {
+            return false;
+        }
+
+        $host = parse_url($href, PHP_URL_HOST);
+        $appHost = parse_url(url('/'), PHP_URL_HOST);
+
+        if (!$host || !$appHost) {
+            return true;
+        }
+
+        return mb_strtolower($host) !== mb_strtolower($appHost);
+    }
+
     protected function replaceAnchorWithMissingMarker(DOMElement $anchorNode): void
     {
         $document = $anchorNode->ownerDocument;
@@ -177,24 +194,5 @@ class OfflineExportHtmlRewriter
         $anchorNode->parentNode?->insertBefore($textNode, $anchorNode);
         $anchorNode->parentNode?->insertBefore($noteNode, $anchorNode);
         $anchorNode->parentNode?->removeChild($anchorNode);
-    }
-
-    protected function replaceImageWithMissingMarker(DOMElement $imageNode): void
-    {
-        $document = $imageNode->ownerDocument;
-        if (!$document) {
-            return;
-        }
-
-        $altText = trim($imageNode->getAttribute('alt')) ?: 'Image';
-        $textNode = $document->createElement('span', $altText);
-        $textNode->setAttribute('class', 'offline-missing-image');
-
-        $noteNode = $document->createElement('span', ' (not included in export)');
-        $noteNode->setAttribute('class', 'offline-missing-link-note');
-
-        $imageNode->parentNode?->insertBefore($textNode, $imageNode);
-        $imageNode->parentNode?->insertBefore($noteNode, $imageNode);
-        $imageNode->parentNode?->removeChild($imageNode);
     }
 }
