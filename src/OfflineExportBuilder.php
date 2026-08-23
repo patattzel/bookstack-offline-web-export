@@ -75,7 +75,17 @@ class OfflineExportBuilder
     public function buildForBook(Book $book): string
     {
         $book->loadMissing('cover');
-        $directPages = $book->directPages()->scopes('visible')->where('draft', '=', false)->orderBy('priority')->get()->all();
+
+        // Query pages without an existing chapter relation instead of using
+        // Book::directPages(). Promoting a chapter to a book can leave its pages
+        // with chapter_id=0, while that relation only matches NULL on newer versions.
+        $directPages = $book->pages()
+            ->scopes('visible')
+            ->whereDoesntHave('chapter')
+            ->where('draft', '=', false)
+            ->orderBy('priority')
+            ->get()
+            ->all();
         $chapters = $book->chapters()->scopes('visible')->orderBy('priority')->get()->all();
         $chapterPages = [];
 
